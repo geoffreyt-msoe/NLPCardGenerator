@@ -1,36 +1,45 @@
 from keras.models import Sequential
-from keras.layers import LSTM, Dense, Dropout, Masking, Embedding
+from keras.layers import LSTM, Dense, Dropout, Embedding
 from keras.preprocessing.text import Tokenizer
 from keras.callbacks import EarlyStopping, ModelCheckpoint
-from keras.utils import split_dataset
 from keras.losses import SparseCategoricalCrossentropy
 from keras.models import load_model
+from keras.metrics import SparseCategoricalAccuracy, MeanSquaredError, RootMeanSquaredError, MeanAbsoluteError, CosineSimilarity
 import numpy as np
 import random
 
 class Name_Generator:
     
-    def __init__(self, cards, context_length):
+    def __init__(self, cards, context_length, verbose=True):
 
+        self.verbose = verbose
+
+        print("Getting documents...")
         documents = self.get_documents(cards)
-        print("Documents:", documents)
+        if(self.verbose):
+            print("Documents:", documents)
 
+        print("Getting sequences...")
         self.tokenizer = Tokenizer(num_words=None)
         sequences = self.get_sequences(documents, self.tokenizer)
-        print("Sequences:", sequences)
+        if(self.verbose):
+            print("Sequences:", sequences)
 
+        print("Getting vocabulary...")
         self.vocabulary = self.tokenizer.index_word
-        print("Vocabulary:", self.vocabulary)
+        if(self.verbose):
+            print("Vocabulary:", self.vocabulary)
 
+        print("Getting features and labels...")
         self.features, self.labels = self.get_features_and_labels(sequences, context_length)
-        print("Features:", self.features)
-        print("Labels:", self.labels)
+        if(self.verbose):
+            print("Features:", self.features)
+            print("Labels:", self.labels)
         self.features = np.array(self.features)
         self.labels = np.array(self.labels)
 
         #self.encoded_labels = self.get_encoded_labels(self.features, self.labels, vocabulary)
         #print("One-Hot Encoded Labels:", self.encoded_labels)
-        
         self.model = Sequential()
         self.model.add(
             Embedding(input_dim = len(self.vocabulary),# + 1,
@@ -40,14 +49,13 @@ class Name_Generator:
                       trainable = True,
                       mask_zero = False)
         )
-        #self.model.add(
-        #    Masking(mask_value = 0.0)
-        #)
         self.model.add(
             LSTM(64, 
                  return_sequences = False,
-                 dropout = 0.1,
-                 recurrent_dropout = 0.1
+                 #dropout = 0.1,
+                 #recurrent_dropout = 0.1
+                 dropout = 0.01,
+                 recurrent_dropout = 0.01
                  )
         )
         self.model.add(
@@ -55,17 +63,25 @@ class Name_Generator:
                   activation = 'relu')
         )
         self.model.add(
-            Dropout(0.5)
+            #Dropout(0.5)
+            Dropout(0.1)
         )
         self.model.add(
             Dense(len(self.vocabulary) + 1, 
                   activation = 'softmax')
         )
         self.model.compile(optimizer = 'adam',
-                      #loss = 'categorical_crossentropy',
                            loss = SparseCategoricalCrossentropy(),
-                      metrics = ['accuracy']
+                           metrics = [
+                               'accuracy',
+                               SparseCategoricalAccuracy(name="SCA"),
+                               MeanSquaredError(name="MSE"),
+                               RootMeanSquaredError(name="RMSE"),
+                               MeanAbsoluteError(name="MAE"),
+                               CosineSimilarity(name="CS")
+                            ]
         )
+        print("Done loading!")
 
 
     def train_model(self, validation_split=0.2, batch_size=2, epochs=1):
@@ -74,13 +90,17 @@ class Name_Generator:
                     ModelCheckpoint('./models/model.h5', 
                                     save_best_only = True, 
                                     save_weights_only = False)]
-        history = self.model.fit(x = self.features,
+        self.history = self.model.fit(x = self.features,
                                  y = self.labels,
                                  batch_size = batch_size,
                                  epochs = epochs,
                                  callbacks = callbacks,
                                  validation_split = validation_split,
                                  shuffle = False)
+        #self.display_metrics()
+        print(self.model.summary())
+        
+        
         
     def predict(self, prompt, num_predictions, random_prompt=False, random_prompt_length=2):
         user_input = []
@@ -108,13 +128,18 @@ class Name_Generator:
                     x[i].insert(0, x[i-1][1])
                     x[i-1].pop(0)
                 x.pop(0)
-            print("Prompt Sequence:", x)
-            probabilities = list(self.model.predict(x, batch_size=2)[0])
+            if(self.verbose):
+                print("Prompt Sequence:", x)
+            prediction = self.model.predict(x, batch_size=2)[0]
+            probabilities = list(prediction)
             index = probabilities.index(max(probabilities))
             prediction = self.vocabulary[index]
             predictions.append(prediction)
             user_input.append(prediction)
         return(user_input)
+    
+    def display_metrics(self):
+        print(self.history)
 
 
     def get_documents(self, cards):
@@ -148,3 +173,10 @@ class Name_Generator:
     
     def load_model(self, filename):
         self.model = load_model(filename)
+
+    def get_vocabulary(self, num_values):
+        vocab = []
+        keys = list(self.vocabulary.values())
+        for i in range(num_values):
+            vocab.append(keys[int(random.random() * len(keys))])
+        return vocab
