@@ -72,7 +72,19 @@ class API_Interface:
         symbols = json["data"]
         return symbols
         
-    def random_manacost_local(self, include_x: bool = False) -> str:
+    def random_manacost_local(self, include_x: bool = False, verbose: bool = False) -> str:
+        """generates a random mana cost for a magic card
+        
+        only will generate a mana cost with one of each mana at the moment
+        
+        maximum casting cost this method will produce is {15}, and starts to scale down as more colors of mana are added to the cost
+
+        Args:
+            include_x (bool, optional): includes the option of X appearing in the manacost, doesn't work right now. Defaults to False.
+
+        Returns:
+            str: a string that includes what a scryfall output would look like for a mtg cards mana cost. 
+        """
         main_mana_colors_dict = {"white":"W", "blue":"U", "black":"B", "red":"R", "green":"G"}
         main_mana_colors_list = ['W', 'U', 'B', 'R', 'G']  # White, Blue, Black, Red, Green
         
@@ -81,14 +93,17 @@ class API_Interface:
         
         mana_cost = ""
         determine_multicolorness = random.randint(a=0, b=len(main_mana_colors_list))
-        print(f"number of colors that this card will be: {determine_multicolorness}")
+        if verbose == True:
+            print(f"number of colors that this card will be: {determine_multicolorness}")
         
         for i in range(0, determine_multicolorness):
             determine_color = random.randint(a=0, b=len(main_mana_colors_list))
-            print(f"random number generated: {determine_color}")
+            if verbose == True:
+                print(f"random number generated: {determine_color}")
             #color = main_mana_colors_list[determine_color]
             color = main_mana_colors_list.pop(determine_color - 1)
-            print(f"next color of card will be: {color}, remaining options: {main_mana_colors_list}")
+            if verbose == True:
+                print(f"next color of card will be: {color}, remaining options: {main_mana_colors_list}")
             mana_cost += "{"
             mana_cost += f"{color}"
             mana_cost += "}"
@@ -97,13 +112,20 @@ class API_Interface:
         # mana it takes to cast the spell
         generic_cost_upper_limit: int = 15 - (2 * (5 - len(main_mana_colors_list)))
         determine_generic_cost = random.randint(a=0, b=generic_cost_upper_limit)
-        print(f"amount of generic mana that this card will cost to cast in addition to colored mana is: {determine_generic_cost}")
+        if verbose == True:
+            print(f"amount of generic mana that this card will cost to cast in addition to colored mana is: {determine_generic_cost}")
         if determine_generic_cost != 0:
             mana_cost += "{"
             mana_cost += f"{determine_generic_cost}"
             mana_cost += "}"
             
         return mana_cost
+    
+    def get_mana_symbol_key() -> dict:
+        return {"white":"W", "blue":"U", "black":"B", "red":"R", "green":"G"}
+    
+    def get_mana_symbol_list() -> list:
+        return ['W', 'U', 'B', 'R', 'G']  # White, Blue, Black, Red, Green
 
 
 api = API_Interface()
