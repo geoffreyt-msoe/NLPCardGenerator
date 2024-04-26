@@ -1,5 +1,7 @@
 import requests
 import random
+import json
+import time
 
 class API_Interface:
 
@@ -33,6 +35,106 @@ class API_Interface:
         for i in range(len(json)):
             names.append(json[i]["name"])
         return names
+    
+    def get_all_card_names_scryfall(self) -> list:
+        api_url = "https://api.scryfall.com/catalog/card-names"
+        response = requests.get(api_url, verify=True)
+        all_names: dict = response.json()
+        return all_names["data"]
+    
+    def get_all_creature_types_scryfall(self) -> list:
+        api_url = "https://api.scryfall.com/catalog/creature-types"
+        response = requests.get(api_url, verify=True)
+        creature_types: dict = response.json()
+        return creature_types["data"]
+    
+    def get_all_land_types_scryfall(self) -> list:
+        api_url = "https://api.scryfall.com/catalog/land-types"
+        response = requests.get(api_url, verify=True)
+        land_types: dict = response.json()
+        return land_types["data"]
+    
+    def get_all_artifact_types_scryfall(self) -> list:
+        api_url = "https://api.scryfall.com/catalog/artifact-types"
+        response = requests.get(api_url, verify=True)
+        artifact_types: dict = response.json()
+        return artifact_types["data"]
+    
+    def get_all_enchantment_types_scryfall(self) -> list:
+        api_url = "https://api.scryfall.com/catalog/enchantment-types"
+        response = requests.get(api_url, verify=True)
+        enchantment_types: dict = response.json()
+        return enchantment_types["data"]
+    
+    def get_all_spell_types_scryfall(self) -> list:
+        api_url = "https://api.scryfall.com/catalog/spell-types"
+        response = requests.get(api_url, verify=True)
+        spell_types: dict = response.json()
+        return spell_types["data"]
+    
+    def get_all_powers_scryfall(self) -> list:
+        api_url = "https://api.scryfall.com/catalog/powers"
+        response = requests.get(api_url, verify=True)
+        powers: dict = response.json()
+        return powers["data"]
+    
+    def get_all_toughnesses_scryfall(self) -> list:
+        api_url = "https://api.scryfall.com/catalog/toughnesses"
+        response = requests.get(api_url, verify=True)
+        toughnesses: dict = response.json()
+        return toughnesses["data"]
+    
+    def get_all_keyword_abilities_scryfall(self) -> list:
+        api_url = "https://api.scryfall.com/catalog/keyword-abilities"
+        response = requests.get(api_url, verify=True)
+        keywords: dict = response.json()
+        return keywords["data"]
+    
+    def get_all_keyword_actions_scryfall(self) -> list:
+        api_url = "https://api.scryfall.com/catalog/keyword-actions"
+        response = requests.get(api_url, verify=True)
+        keywords: dict = response.json()
+        return keywords["data"]
+    
+    def get_all_keyword_words_scryfall(self) -> list:
+        api_url = "https://api.scryfall.com/catalog/keyword-words"
+        response = requests.get(api_url, verify=True)
+        keywords: dict = response.json()
+        return keywords["data"]
+    
+    def get_all_supertypes_scryfall(self) -> list:
+        api_url = "https://api.scryfall.com/catalog/supertypes"
+        response = requests.get(api_url, verify=True)
+        supertypes: dict = response.json()
+        return supertypes["data"]
+    
+    def get_word_bank_scryfall(self) -> list:
+        api_url = "https://api.scryfall.com/catalog/word-bank"
+        response = requests.get(api_url, verify=True)
+        word_bank: dict = response.json()
+        return word_bank["data"]
+    
+    def get_symbology_scryfall(self) -> list:
+        api_url = "https://api.scryfall.com/symbology"
+        response = requests.get(api_url, verify=True)
+        symbology = response.json()
+        print(type(symbology["data"]))
+        return symbology["data"]
+    
+    def get_scryfall_interpretation_manacost(self, manacost: str) -> dict:
+        """_summary_
+            https://scryfall.com/docs/api/card-symbols/parse-mana
+        Args:
+            manacost (str): _description_
+
+        Returns:
+            dict: _description_
+        """
+        api_url = f"https://api.scryfall.com/symbology/parse-mana?cost={str}"
+        response = requests.get(api_url, verify=True)
+        scryfall_response = response.json()
+        return scryfall_response
+        
     
     def get_all_unique_major_card_types_request(self):
         api_url = "http://localhost:5013/api/Magic/all_unique_major_card_types"
@@ -127,6 +229,17 @@ class API_Interface:
     def get_mana_symbol_list() -> list:
         return ['W', 'U', 'B', 'R', 'G']  # White, Blue, Black, Red, Green
 
-
 api = API_Interface()
-print(api.random_manacost_local())
+names = api.get_all_card_names_scryfall()
+print(names[0])
+
+creature_types = api.get_all_creature_types_scryfall()
+print(creature_types[0])
+
+symbology = api.get_symbology_scryfall()
+print(symbology[0])
+print(symbology[0]["symbol"])
+print(type(symbology[0]["symbol"]))
+
+reponse = api.get_scryfall_interpretation_manacost("RUx")
+print(reponse)
