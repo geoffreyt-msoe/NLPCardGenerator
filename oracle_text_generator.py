@@ -8,8 +8,11 @@ from keras.metrics import SparseCategoricalAccuracy, MeanSquaredError, RootMeanS
 import numpy as np
 import random
 
-class Name_Generator:
-    
+
+magic_number_for_context_length_and_batch_size = 4
+
+class Oracle_Text_Generator:
+
     def __init__(self, cards, context_length, verbose=True):
 
         self.verbose = verbose
@@ -42,7 +45,7 @@ class Name_Generator:
         #print("One-Hot Encoded Labels:", self.encoded_labels)
         self.model = Sequential()
         self.model.add(
-            Embedding(input_dim = len(self.vocabulary),# + 1,
+            Embedding(input_dim = len(self.vocabulary) + 1,
                       input_length = context_length,
                       output_dim = 100,
                       #weights=<insert_pre_trained_embeddings_here>,
@@ -84,7 +87,7 @@ class Name_Generator:
         print("Done loading!")
 
 
-    def train_model(self, validation_split=0.2, batch_size=2, epochs=1):
+    def train_model(self, validation_split=0.2, batch_size=magic_number_for_context_length_and_batch_size, epochs=1):
         callbacks = [EarlyStopping(monitor = 'val_loss',
                                    patience = 5),
                     ModelCheckpoint('./models/model.h5', 
@@ -102,10 +105,9 @@ class Name_Generator:
         
         
         
-    def predict(self, prompt, num_predictions, random_prompt=False, random_prompt_length=2):
+    def predict(self, prompt, num_predictions, random_prompt=False, random_prompt_length=magic_number_for_context_length_and_batch_size):
         user_input = []
         predictions = []
-        duplicate_index_offset = 1
         if(random_prompt):
             vocab_vals = list(self.vocabulary.values())
             for i in range(random_prompt_length):
@@ -115,34 +117,19 @@ class Name_Generator:
         for i in range(num_predictions):
             sequences = self.tokenizer.texts_to_sequences(user_input)
             x = []
-            token_index = -1
-            batch_index = -1
+            x.append([])
             for sequence in sequences:
                 if len(sequence) != 0:
-                    if token_index % 2 == 1 or batch_index == -1:
-                        x.append([])
-                        batch_index += 1
-                    x[batch_index].append(sequence[0])
-                    token_index += 1
-            if len(x[batch_index]) < 2:
-                for i in range(batch_index, 0, -1):
-                    x[i].insert(0, x[i-1][1])
-                    x[i-1].pop(0)
-                x.pop(0)
+                    x[0].append(sequence[0])
             if(self.verbose):
                 print("Prompt Sequence:", x)
-            prediction = self.model.predict(x, batch_size=2)[0]
+            prediction = self.model.predict(x, batch_size=magic_number_for_context_length_and_batch_size)[0]
             probabilities = list(prediction)
             index = probabilities.index(max(probabilities))
             prediction = self.vocabulary[index]
-            while prediction in predictions:
-                index = probabilities.index(max(probabilities)) + duplicate_index_offset
-                prediction = self.vocabulary[index]
-                duplicate_index_offset += 1
             predictions.append(prediction)
             user_input.append(prediction)
-        return(predictions)
-        #return(user_input)
+        return(user_input)
     
     def display_metrics(self):
         print(self.history)
@@ -151,7 +138,7 @@ class Name_Generator:
     def get_documents(self, cards):
         documents = []
         for card in cards:
-            documents.append(card['name'])
+            documents.append(card['oracle_text'])
         return documents
 
 
@@ -160,7 +147,7 @@ class Name_Generator:
         return tokenizer.texts_to_sequences(documents)
     
 
-    def get_features_and_labels(self, sequences, context_length = 2):
+    def get_features_and_labels(self, sequences, context_length = magic_number_for_context_length_and_batch_size):
         features = []
         labels = []
         for sequence in sequences:
