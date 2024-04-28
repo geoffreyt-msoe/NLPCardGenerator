@@ -218,24 +218,13 @@ class API_Interface:
         for i in range(len(json)):
             types.append(json[i]["type"])
         return types
-
-    def get_oracle_text(self, params: list = None):
-        """
-        Retrieves the oracle text of cards from the API.
-
-        Args:
-            params (list, optional): A list of card names to retrieve the oracle text for. Defaults to None.
-        """
-        api_url = ""
-        if params is None:
-            api_url = "http://localhost:5013/api/Magic/all_card_names"
-        else:
-            string: str = ""
-            string = ','.join(self=string, iterable=params)
-            api_url = f"http://localhost:5013/api/Magic/all_card_names/{string}"
-
-        pass
-
+    
+    def get_flavor_text(self):
+        api_url = "http://localhost:5013/api/Magic/all_flavor_text"
+        response = requests.get(api_url, verify=False)
+        json_list = response.json()
+        return json_list
+    
     def random_manacost_scryfall(self):
         """
         Retrieves a random mana cost from the Scryfall API.
