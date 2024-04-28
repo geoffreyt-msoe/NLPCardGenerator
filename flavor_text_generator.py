@@ -11,14 +11,14 @@ import random
 
 magic_number_for_context_length_and_batch_size = 4
 
-class Oracle_Text_Generator:
+class Flavor_Text_Generator:
 
     def __init__(self, documents, context_length, verbose=True):
 
         self.verbose = verbose
 
         print("Getting documents...")
-        #documents = self.get_documents(texts)
+        #documents = self.get_documents(cards)
         if(self.verbose):
             print("Documents:", documents)
 
@@ -138,7 +138,7 @@ class Oracle_Text_Generator:
     def get_documents(self, cards):
         documents = []
         for card in cards:
-            documents.append(card['oracle_text'])
+            documents.append(card['flavor_text'])
         return documents
 
 

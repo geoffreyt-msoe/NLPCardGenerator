@@ -10,12 +10,12 @@ import random
 
 class Name_Generator:
     
-    def __init__(self, cards, context_length, verbose=True):
+    def __init__(self, documents, context_length, verbose=True):
 
         self.verbose = verbose
 
         print("Getting documents...")
-        documents = self.get_documents(cards)
+        #documents = self.get_documents(names)
         if(self.verbose):
             print("Documents:", documents)
 
