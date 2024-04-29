@@ -17,20 +17,24 @@ class Card_Generator:
     def initialize_models(self):
         print("Getting card data...")
         self.api = API_Interface()
-        card_names = self.api.get_all_card_names_scryfall()
-        self.card_name_generator = Name_Generator(documents=card_names, context_length=2, verbose=False)
+
+        name_documents = self.api.get_all_card_names_scryfall()
+        self.card_name_generator = Name_Generator(documents=name_documents, context_length=2, verbose=False)
+
         #TODO get cause data
         #self.oracle_text_generator_cause = Oracle_Text_Generator(documents=None, context_length=4, verbose=False)
         #TODO get effect data
         #self.oracle_text_generator_effect = Oracle_Text_Generator(documents=None, context_length=4, verbose=False)
-        #TODO get flavor text
-        #self.flavor_text_generator = Flavor_Text_Generator(documents=None, context_length=4, verbose=False)
+
+        flavor_documents = open('data/flavor_text.json', encoding="utf8")
+        flavor_documents = json.load(flavor_documents)
+        self.flavor_text_generator = Flavor_Text_Generator(documents=flavor_documents, context_length=4, verbose=False)
         
-        self.card_name_generator.load_model("models/prototype.h5")
+        self.card_name_generator.load_model("models/name.h5")
         #TODO load other models
         #self.oracle_text_generator_cause.load_model(".h5")
         #self.oracle_text_generator_effect.load_model(".h5")
-        #self.flavor_text_generator.load_model(".h5")
+        self.flavor_text_generator.load_model("models/flavor.h5")
 
     def get_random_prediction_lengths(self):
         rand = random.Random()
@@ -49,25 +53,33 @@ class Card_Generator:
         #TODO generate card type
         #TODO predict oracle text cause
         #TODO predict oracle text effect
-        #TODO predict flavor text
+        flavor_text = self.flavor_text_generator.predict(prompt="", num_predictions=lengths["flavor_length"], random_prompt=True, random_prompt_length=1, max_word_occurance=1)
         #TODO generate power/toughness
 
-        print("Card name:", card_name)
+
+        print("Card name:", end=" ")
+        for word in card_name:
+            print(word, end=" ")
+        print()
+
         print("Mana cost:", mana_cost)
         #TODO print card type
         #TODO print oracle text
-        #TODO print flavor text
+        print("Flavor text:", end=" ")
+        for word in flavor_text:
+            print(word, end=" ")
+        print()
         #TODO print power/toughness
 
-
-card_generator = Card_Generator()
-print("Press enter to generate card. Enter q to quit.")
-user_input = input()
-while(user_input != "q" and user_input != "Q"):
-    card_generator.generate_card()
+def do_card_generation():
+    card_generator = Card_Generator()
+    print("Press enter to generate card. Enter q to quit.")
     user_input = input()
+    while(user_input != "q" and user_input != "Q"):
+        card_generator.generate_card()
+        user_input = input()
 
-
+do_card_generation()
 
 if name:
     use_api = False
@@ -222,13 +234,13 @@ if flavor:
         print("Getting card data...")
         api = API_Interface()
         names = api.get_cards(-1)
-        oracle_text_generator = Flavor_Text_Generator(cards=names, context_length=4, verbose=True)
+        flavor_text_generator = Flavor_Text_Generator(cards=names, context_length=4, verbose=True)
 
     else:
         print("Getting card data...")
-        cards_json = open('data/cards.json')
-        cards_dict = json.load(cards_json)
-        oracle_text_generator = Flavor_Text_Generator(cards=cards_dict, context_length=4, verbose=True)
+        flavor_json = open('data/flavor_text.json', encoding="utf8")
+        flavor_dict = json.load(flavor_json)
+        flavor_text_generator = Flavor_Text_Generator(documents=flavor_dict, context_length=4, verbose=False)
 
     user_in = input("\nWould you like to load a model, or train a model?\nEnter 'load' to load, 'train' to train, or 'q' to quit: ")
     while user_in != "load" and user_in != "train" and user_in != "q":
@@ -236,13 +248,13 @@ if flavor:
         user_in = input("\nWould you like to load a model, or train a model?\nEnter 'load' to load, 'train' to train, or 'q' to quit: ")
 
     if user_in == "train":
-        oracle_text_generator.train_model(validation_split=0.1, batch_size=4, epochs=10)
+        flavor_text_generator.train_model(validation_split=0.1, batch_size=4, epochs=10)
 
     elif user_in == "load":
         user_in = input("Enter the name of the model you would like to load.\nIt must be located within the 'models' folder: ")
         try:
             print("Loading model...")
-            oracle_text_generator.load_model("./models/" + user_in)
+            flavor_text_generator.load_model("./models/" + user_in)
             print("Done loading!")
         except:
             print("Could not find model.")
@@ -264,19 +276,19 @@ if flavor:
                 break
             elif user_prompt == "v":
                 prompt_user_for_num_predictions = False
-                print(oracle_text_generator.get_vocabulary(50))
+                print(flavor_text_generator.get_vocabulary(50))
             if prompt_user_for_num_predictions:
                 user_num_predictions = input("Enter the number of words to predict: ")
                 if user_num_predictions == "q" or user_num_predictions == "Q":
                     break
                 elif user_num_predictions == "v":
                     prompt_user_for_num_predictions = False
-                    print(oracle_text_generator.get_vocabulary(50))
+                    print(flavor_text_generator.get_vocabulary(50))
                 elif user_prompt == "r" or user_prompt == "R":
-                    predictions = oracle_text_generator.predict(prompt="", num_predictions=int(user_num_predictions), random_prompt=True, random_prompt_length=1)
+                    predictions = flavor_text_generator.predict(prompt="", num_predictions=int(user_num_predictions), random_prompt=True, random_prompt_length=1)
                 else:
                     try:
-                        predictions = oracle_text_generator.predict(prompt=user_prompt, num_predictions=int(user_num_predictions))
+                        predictions = flavor_text_generator.predict(prompt=user_prompt, num_predictions=int(user_num_predictions))
                     except:
                         prompt_user_for_num_predictions = False
                         print("Not enough words in model vocabulary. Try Again.")

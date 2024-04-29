@@ -144,8 +144,9 @@ class Name_Generator:
         return(predictions)
         #return(user_input)
     
+
     def display_metrics(self):
-        print(self.history)
+        print(self.model.summary())
 
 
     def get_documents(self, cards):
