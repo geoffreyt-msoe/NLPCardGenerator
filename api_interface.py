@@ -254,10 +254,18 @@ class api_interface:
         Returns:
             list: A list of all oracle text.
         """
-        api_url = f"http://localhost:{self.port}/api/Magic/all_oracle_text?separate_clause={separate_clause}&separate_cause_effect={separate_cause_effect}"
-        response = requests.get(api_url, verify=False, timeout=1000)
+        api_url = "https://localhost:7000/api/Magic/stats"
+        response = requests.get(api_url, verify=False)
+        print(response.content)
+
+        api_url = f"https://localhost:{self.port}/api/Magic/all_oracle_text/{separate_clause}/{separate_cause_effect}"
+        print(api_url)
+        with requests.Session() as s:
+            response = s.get(api_url, verify=False, timeout=1500)
+            response.raise_for_status()
+
         json_list = response.json()
-        return json_list
+        return json_list["separated"], json_list["causes"], json_list["effects"]
     
     def random_manacost_scryfall(self):
         """

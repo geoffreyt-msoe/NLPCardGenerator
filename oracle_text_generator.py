@@ -19,12 +19,14 @@ class Oracle_Text_Generator:
 
         print("Getting documents...")
         #documents = self.get_documents(texts)
-        if(self.verbose):
+        if(self.verbose and documents is not None):
             print("Documents:", documents)
 
         print("Getting sequences...")
         self.tokenizer = Tokenizer(num_words=None)
+        
         sequences = self.get_sequences(documents, self.tokenizer)
+        
         if(self.verbose):
             print("Sequences:", sequences)
 

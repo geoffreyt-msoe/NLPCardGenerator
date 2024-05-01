@@ -1,12 +1,13 @@
+from enum import auto
 import json
 import random
 from name_generator import Name_Generator
 from oracle_text_generator import Oracle_Text_Generator
 from flavor_text_generator import Flavor_Text_Generator
-from api_interface import API_Interface
+from api_interface import api_interface as API_Interface
 
 name = False
-oracle = False
+oracle = True
 flavor = False
 
 class Card_Generator:
@@ -16,24 +17,31 @@ class Card_Generator:
 
     def initialize_models(self):
         print("Getting card data...")
-        self.api = API_Interface()
+        self.api = API_Interface(port=7000, auto_load_card_file=True)
 
         name_documents = self.api.get_all_card_names_scryfall()
         self.card_name_generator = Name_Generator(documents=name_documents, context_length=2, verbose=False)
 
         #TODO get cause data
-        #self.oracle_text_generator_cause = Oracle_Text_Generator(documents=None, context_length=4, verbose=False)
+        oracle_text = None
+        try: 
+            oracle_text = self.api.get_all_oracle_text_api(True, False)
+        except:
+            oracle_text = open('data/oracle_text.json', encoding="utf8")
+            oracle_text = json.load(oracle_text)
+
+        self.oracle_text_generator_cause = Oracle_Text_Generator(documents=oracle_text, context_length=4, verbose=False)
         #TODO get effect data
         #self.oracle_text_generator_effect = Oracle_Text_Generator(documents=None, context_length=4, verbose=False)
 
         flavor_documents = open('data/flavor_text.json', encoding="utf8")
         flavor_documents = json.load(flavor_documents)
         self.flavor_text_generator = Flavor_Text_Generator(documents=flavor_documents, context_length=4, verbose=False)
-        
+
         self.card_name_generator.load_model("models/name.h5")
         #TODO load other models
-        #self.oracle_text_generator_cause.load_model(".h5")
-        #self.oracle_text_generator_effect.load_model(".h5")
+        self.oracle_text_generator_cause.load_model(".h5")
+        self.oracle_text_generator_effect.load_model(".h5")
         self.flavor_text_generator.load_model("models/flavor.h5")
 
     def get_random_prediction_lengths(self):
@@ -79,7 +87,7 @@ def do_card_generation():
         card_generator.generate_card()
         user_input = input()
 
-do_card_generation()
+#do_card_generation()
 
 if name:
     use_api = False
@@ -155,19 +163,26 @@ if name:
     print("Exiting...")
 
 if oracle:
-    use_api = False
+    use_api = True
 
     if(use_api):
         print("Getting card data...")
-        api = API_Interface()
-        names = api.get_cards(-1)
-        oracle_text_generator = Oracle_Text_Generator(cards=names, context_length=4, verbose=True)
+        api = API_Interface(port=7000, auto_load_card_file=True)
+        separated, cause, effect = api.get_all_oracle_text_api(True, True)
+        if cause is not None and effect is not None:
+            cause_oracle_text_generator = Oracle_Text_Generator(documents=cause, context_length=4, verbose=True)
+            effect_oracle_text_generator = Oracle_Text_Generator(documents=effect, context_length=4, verbose=True)
+        else:
+            print("Could not get cause and effect oracle text.")
+            cause_oracle_text_generator = None
+            effect_oracle_text_generator = None
+            oracle_text_generator = Oracle_Text_Generator(documents=separated, context_length=4, verbose=True)
 
     else:
         print("Getting card data...")
-        cards_json = open('cards.json')
+        cards_json = open('oracle_text.json')
         cards_dict = json.load(cards_json)
-        oracle_text_generator = Oracle_Text_Generator(cards=cards_dict, context_length=4, verbose=True)
+        oracle_text_generator = Oracle_Text_Generator(documents=cards_dict, context_length=4, verbose=True)
 
     user_in = input("\nWould you like to load a model, or train a model?\nEnter 'load' to load, 'train' to train, or 'q' to quit: ")
     while user_in != "load" and user_in != "train" and user_in != "q":
@@ -175,7 +190,11 @@ if oracle:
         user_in = input("\nWould you like to load a model, or train a model?\nEnter 'load' to load, 'train' to train, or 'q' to quit: ")
 
     if user_in == "train":
-        oracle_text_generator.train_model(validation_split=0.1, batch_size=4, epochs=10)
+        if cause_oracle_text_generator is not None and effect_oracle_text_generator is not None:
+            cause_oracle_text_generator.train_model(validation_split=0.1, batch_size=4, epochs=10)
+            effect_oracle_text_generator.train_model(validation_split=0.1, batch_size=4, epochs=10)
+        else:
+            oracle_text_generator.train_model(validation_split=0.1, batch_size=4, epochs=10)
 
     elif user_in == "load":
         user_in = input("Enter the name of the model you would like to load.\nIt must be located within the 'models' folder: ")
