@@ -9,7 +9,7 @@ from type_line_generator import Type_Line_Generator
 
 name = False
 oracle = False
-typeline = True
+typeline = False
 flavor = False
 
 class Card_Generator:
@@ -19,31 +19,28 @@ class Card_Generator:
 
     def initialize_models(self):
         print("Getting card data...")
-        self.api = API_Interface(port=7000, auto_load_card_file=True)
+        self.api = API_Interface(port=7000, auto_load_card_file=False)
 
-        name_documents = self.api.get_all_card_names_scryfall()
+        print("Loading name generation model...")
+        name_documents = open('data/names.json', encoding="utf8")
+        name_documents = json.load(name_documents)
         self.card_name_generator = Name_Generator(documents=name_documents, context_length=2, verbose=False)
 
-        #TODO get cause data
-        oracle_text = None
-        try: 
-            oracle_text = self.api.get_all_oracle_text_api(True, False)
-        except:
-            oracle_text = open('data/oracle_text.json', encoding="utf8")
-            oracle_text = json.load(oracle_text)
+        print("Loading oracle text generation models...")
+        oracle_documents = open('data/oracle_text.json', encoding="utf8")
+        oracle_documents = json.load(oracle_documents)
+        self.oracle_text_generator_cause = Oracle_Text_Generator(documents=oracle_documents["causes"], context_length=4, verbose=False)
+        self.oracle_text_generator_full = Oracle_Text_Generator(documents=oracle_documents["separated"], context_length=4, verbose=False)
 
-        self.oracle_text_generator_cause = Oracle_Text_Generator(documents=oracle_text, context_length=4, verbose=False)
-        #TODO get effect data
-        #self.oracle_text_generator_effect = Oracle_Text_Generator(documents=None, context_length=4, verbose=False)
-
+        print("Loading flavor text generation model...")
         flavor_documents = open('data/flavor_text.json', encoding="utf8")
         flavor_documents = json.load(flavor_documents)
         self.flavor_text_generator = Flavor_Text_Generator(documents=flavor_documents, context_length=4, verbose=False)
 
         self.card_name_generator.load_model("models/name.h5")
         #TODO load other models
-        self.oracle_text_generator_cause.load_model(".h5")
-        self.oracle_text_generator_effect.load_model(".h5")
+        self.oracle_text_generator_cause.load_model("models/oracle_cause.h5")
+        self.oracle_text_generator_full.load_model("models/oracle_full.h5")
         self.flavor_text_generator.load_model("models/flavor.h5")
 
     def get_random_prediction_lengths(self):
@@ -61,10 +58,17 @@ class Card_Generator:
         card_name = self.card_name_generator.predict(prompt="", num_predictions=lengths["name_length"], random_prompt=True, random_prompt_length=2)
         mana_cost = self.api.random_manacost_local()
         #TODO generate card type
-        #TODO predict oracle text cause
-        #TODO predict oracle text effect
+        oracle_cause = self.oracle_text_generator_cause.predict(prompt="", num_predictions=lengths["oracle_cause_length"], random_prompt=True, random_prompt_length=1)
+        oracle_cause_string = ""
+        for i in range(len(oracle_cause)):
+            oracle_cause_string += oracle_cause[i]
+            if i < len(oracle_cause)-1:
+                oracle_cause_string += " "
+            else:
+                oracle_cause_string += ","
+        oracle_full = self.oracle_text_generator_cause.predict(prompt=oracle_cause_string, num_predictions=lengths["oracle_effect_length"], random_prompt=False, random_prompt_length=1)
         flavor_text = self.flavor_text_generator.predict(prompt="", num_predictions=lengths["flavor_length"], random_prompt=True, random_prompt_length=1, max_word_occurance=1)
-        #TODO generate power/toughness
+        #power_toughness = self.api.generate_power_toughness(mana_cost)
 
 
         print("Card name:", end=" ")
@@ -74,12 +78,18 @@ class Card_Generator:
 
         print("Mana cost:", mana_cost)
         #TODO print card type
-        #TODO print oracle text
+
+        print("Oracle text:", end=" ")
+        for word in oracle_full:
+            print(word, end=" ")
+        print()
+
         print("Flavor text:", end=" ")
         for word in flavor_text:
             print(word, end=" ")
         print()
-        #TODO print power/toughness
+
+        #print("Power/Toughness:", power_toughness)
 
 def do_card_generation():
     card_generator = Card_Generator()
@@ -89,7 +99,7 @@ def do_card_generation():
         card_generator.generate_card()
         user_input = input()
 
-#do_card_generation()
+do_card_generation()
 
 if name:
     use_api = False
