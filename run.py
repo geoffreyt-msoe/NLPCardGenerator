@@ -5,9 +5,11 @@ from name_generator import Name_Generator
 from oracle_text_generator import Oracle_Text_Generator
 from flavor_text_generator import Flavor_Text_Generator
 from api_interface import api_interface as API_Interface
+from type_line_generator import Type_Line_Generator
 
 name = False
-oracle = True
+oracle = False
+typeline = True
 flavor = False
 
 class Card_Generator:
@@ -235,6 +237,78 @@ if oracle:
                 else:
                     try:
                         predictions = oracle_text_generator.predict(prompt=user_prompt, num_predictions=int(user_num_predictions))
+                    except:
+                        prompt_user_for_num_predictions = False
+                        print("Not enough words in model vocabulary. Try Again.")
+
+                if prompt_user_for_num_predictions:
+                    print("\nResult: ", end="")
+                    for word in predictions:
+                        print(word, end=" ")
+
+    print("Exiting...")
+    
+if typeline:
+    use_api = True
+
+    if(use_api):
+        print("Getting card data...")
+        api = API_Interface(port=7000, auto_load_card_file=True)
+        lines = api.get_type_line_api()
+        type_line_generator = Type_Line_Generator(documents=lines, context_length=4, verbose=True)
+    else:
+        print("Getting card data...")
+        cards_json = open('type_lines.json')
+        cards_dict = json.load(cards_json)
+        type_line_generator = Type_Line_Generator(documents=cards_dict, context_length=4, verbose=True)
+
+    user_in = input("\nWould you like to load a model, or train a model?\nEnter 'load' to load, 'train' to train, or 'q' to quit: ")
+    while user_in != "load" and user_in != "train" and user_in != "q":
+        print("Please try again.")
+        user_in = input("\nWould you like to load a model, or train a model?\nEnter 'load' to load, 'train' to train, or 'q' to quit: ")
+
+    if user_in == "train":    
+        type_line_generator.train_model(validation_split=0.1, batch_size=4, epochs=10)
+
+    elif user_in == "load":
+        user_in = input("Enter the name of the model you would like to load.\nIt must be located within the 'models' folder: ")
+        try:
+            print("Loading model...")
+            type_line_generator.load_model("./models/" + user_in)
+            print("Done loading!")
+        except:
+            print("Could not find model.")
+            user_in = "q"
+
+    if user_in != "q":
+        print("\nRegarding generating oracle text:" +
+            "\nYou will be asked for a prompt and the number of additional words to predict." + 
+            "\nFor the user prompt, enter at least 1 word that is a part of the model's vocabulary." + 
+            "\nTo view random parts of the model's vocabulary, enter 'v' at any time."
+            "\nTo generate a random prompt, enter 'r' for the user prompt.")
+        user_prompt = ""
+        user_num_predictions = ""
+        while(user_prompt != "q" and user_prompt != "Q" and user_num_predictions != "q" and user_num_predictions != "Q"):
+            prompt_user_for_num_predictions = True
+            predictions = []
+            user_prompt = input("\n\nEnter prompt: ")
+            if user_prompt == "q" or user_prompt == "Q":
+                break
+            elif user_prompt == "v":
+                prompt_user_for_num_predictions = False
+                print(type_line_generator.get_vocabulary(50))
+            if prompt_user_for_num_predictions:
+                user_num_predictions = input("Enter the number of words to predict: ")
+                if user_num_predictions == "q" or user_num_predictions == "Q":
+                    break
+                elif user_num_predictions == "v":
+                    prompt_user_for_num_predictions = False
+                    print(type_line_generator.get_vocabulary(50))
+                elif user_prompt == "r" or user_prompt == "R":
+                    predictions = type_line_generator.predict(prompt="", num_predictions=int(user_num_predictions), random_prompt=True, random_prompt_length=1)
+                else:
+                    try:
+                        predictions = type_line_generator.predict(prompt=user_prompt, num_predictions=int(user_num_predictions))
                     except:
                         prompt_user_for_num_predictions = False
                         print("Not enough words in model vocabulary. Try Again.")

@@ -242,6 +242,14 @@ class api_interface:
         response = requests.get(api_url, verify=False)
         json_list = response.json()
         return json_list
+    
+    def get_type_line_api(self):
+        api_url = f"https://localhost:7000/api/Magic/all_type_lines"
+        with requests.Session() as s:
+            response = s.get(api_url, verify=False, timeout=100)
+            response.raise_for_status()
+        json_list = response.json()
+        return json_list
 
     def get_all_oracle_text_api(self, separate_clause: bool, separate_cause_effect: bool):
         """
@@ -347,6 +355,37 @@ class api_interface:
         """
         return ['W', 'U', 'B', 'R', 'G']  # White, Blue, Black, Red, Green
 
+    def generate_power_toughness(mana_cost) -> (int, int):
+        # Basic heuristic rules for generating power and toughness based on mana cost
+        if mana_cost <= 1:
+            # Low-cost creatures are generally weaker
+            power = toughness = random.choice([1, 2])
+        elif mana_cost <= 3:
+            # Mid-cost creatures are moderately strong
+            power = toughness = random.choice([2, 3, 4])
+        elif mana_cost <= 5:
+            # Higher cost creatures are stronger
+            power = random.choice([3, 4, 5])
+            toughness = random.choice([3, 4, 5])
+        else:
+            # Very high cost creatures are very powerful
+            power = toughness = random.choice([5, 6, 7, 8])
+    
+        # Adding variability between power and toughness
+        power_mod = random.choice([-1, 0, 1])  # small random modification to power
+        toughness_mod = random.choice([-1, 0, 1])  # small random modification to toughness
+
+        # Ensure that neither power nor toughness goes below 1
+        power = max(1, power + power_mod)
+        toughness = max(1, toughness + toughness_mod)
+
+        return power, toughness
+
+# Example usage:
+#mana_costs = [1, 2, 3, 4, 5, 6, 7, 8]  # Example mana costs
+#for cost in mana_costs:
+#    power, toughness = generate_power_toughness(cost)
+#    print(f"Mana Cost {cost}: Power = {power}, Toughness = {toughness}")
 
 #api = api_interface()
 #names = api.get_all_card_names_scryfall()
