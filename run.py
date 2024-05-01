@@ -164,12 +164,13 @@ if name:
 
 if oracle:
     use_api = True
+    use_full_oracle_text = True # if True, use separated oracle text, if False, use cause and effect oracle text
 
     if(use_api):
         print("Getting card data...")
         api = API_Interface(port=7000, auto_load_card_file=True)
-        separated, cause, effect = api.get_all_oracle_text_api(True, True)
-        if cause is not None and effect is not None:
+        separated, cause, effect = api.get_all_oracle_text_api(True, False) # separates text into clauses, separate clauses into just cause and effect statements
+        if cause is not None and effect is not None and use_full_oracle_text == False:
             cause_oracle_text_generator = Oracle_Text_Generator(documents=cause, context_length=4, verbose=True)
             effect_oracle_text_generator = Oracle_Text_Generator(documents=effect, context_length=4, verbose=True)
         else:
@@ -177,7 +178,6 @@ if oracle:
             cause_oracle_text_generator = None
             effect_oracle_text_generator = None
             oracle_text_generator = Oracle_Text_Generator(documents=separated, context_length=4, verbose=True)
-
     else:
         print("Getting card data...")
         cards_json = open('oracle_text.json')
@@ -190,7 +190,7 @@ if oracle:
         user_in = input("\nWould you like to load a model, or train a model?\nEnter 'load' to load, 'train' to train, or 'q' to quit: ")
 
     if user_in == "train":
-        if cause_oracle_text_generator is not None and effect_oracle_text_generator is not None:
+        if cause_oracle_text_generator is not None and effect_oracle_text_generator is not None and use_full_oracle_text == False:
             cause_oracle_text_generator.train_model(validation_split=0.1, batch_size=4, epochs=10)
             effect_oracle_text_generator.train_model(validation_split=0.1, batch_size=4, epochs=10)
         else:
