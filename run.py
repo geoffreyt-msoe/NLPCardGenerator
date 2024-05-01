@@ -58,7 +58,8 @@ class Card_Generator:
         card_name = self.card_name_generator.predict(prompt="", num_predictions=lengths["name_length"], random_prompt=True, random_prompt_length=2)
         mana_cost = self.api.random_manacost_local()
         #TODO generate card type
-        oracle_cause = self.oracle_text_generator_cause.predict(prompt="", num_predictions=lengths["oracle_cause_length"], random_prompt=True, random_prompt_length=1)
+
+        oracle_cause = self.oracle_text_generator_cause.predict(prompt="", num_predictions=lengths["oracle_cause_length"], random_prompt=True, random_prompt_length=1, max_word_occurance=2)
         oracle_cause_string = ""
         for i in range(len(oracle_cause)):
             oracle_cause_string += oracle_cause[i]
@@ -66,7 +67,8 @@ class Card_Generator:
                 oracle_cause_string += " "
             else:
                 oracle_cause_string += ","
-        oracle_full = self.oracle_text_generator_cause.predict(prompt=oracle_cause_string, num_predictions=lengths["oracle_effect_length"], random_prompt=False, random_prompt_length=1)
+        oracle_full = self.oracle_text_generator_cause.predict(prompt=oracle_cause_string, num_predictions=lengths["oracle_effect_length"], random_prompt=False, random_prompt_length=1, max_word_occurance=2)   
+
         flavor_text = self.flavor_text_generator.predict(prompt="", num_predictions=lengths["flavor_length"], random_prompt=True, random_prompt_length=1, max_word_occurance=1)
         #power_toughness = self.api.generate_power_toughness(mana_cost)
 

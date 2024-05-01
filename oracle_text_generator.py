@@ -130,7 +130,7 @@ class Oracle_Text_Generator:
             probabilities = list(prediction)
             index = probabilities.index(max(probabilities))
             prediction = self.vocabulary[index]
-            while self.count_occurances_in_list(prediction, predictions) >= max_word_occurance:
+            while self.count_occurances_in_list(prediction, predictions) > max_word_occurance:
                 index = probabilities.index(max(probabilities)) + duplicate_index_offset
                 prediction = self.vocabulary[index]
                 duplicate_index_offset += 1
