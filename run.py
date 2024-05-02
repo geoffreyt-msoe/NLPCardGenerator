@@ -26,6 +26,11 @@ class Card_Generator:
         name_documents = json.load(name_documents)
         self.card_name_generator = Name_Generator(documents=name_documents, context_length=2, verbose=False)
 
+        print("Loading type line generation model")
+        type_documents = open('data/type_lines.json', encoding="utf8")
+        type_documents = json.load(type_documents)
+        self.type_line_generator = Type_Line_Generator(documents=type_documents, context_length=4, verbose=False)
+
         print("Loading oracle text generation models...")
         oracle_documents = open('data/oracle_text.json', encoding="utf8")
         oracle_documents = json.load(oracle_documents)
@@ -47,6 +52,7 @@ class Card_Generator:
         rand = random.Random()
         lengths = {}
         lengths["name_length"] = int(rand.random() * 4) + 1
+        lengths["type_length"] = int(rand.random() * 4) + 1
         lengths["oracle_cause_length"] = int(rand.random() * 10) + 1
         lengths["oracle_effect_length"] = int(rand.random() * 10) + 1
         lengths["flavor_length"] = int(rand.random() * 15) + 1
@@ -57,7 +63,8 @@ class Card_Generator:
 
         card_name = self.card_name_generator.predict(prompt="", num_predictions=lengths["name_length"], random_prompt=True, random_prompt_length=2)
         mana_cost = self.api.random_manacost_local()
-        #TODO generate card type
+        
+        card_type = self.type_line_generator.predict(prompt="", num_predictions=lengths["type_length"], random_prompt=True, random_prompt_length=1)
 
         oracle_cause = self.oracle_text_generator_cause.predict(prompt="", num_predictions=lengths["oracle_cause_length"], random_prompt=True, random_prompt_length=1, max_word_occurance=2)
         oracle_cause_string = ""
@@ -79,7 +86,11 @@ class Card_Generator:
         print()
 
         print("Mana cost:", mana_cost)
-        #TODO print card type
+        
+        print("Card type:", end=" ")
+        for word in card_type:
+            print(word, end=" ")
+        print()
 
         print("Oracle text:", end=" ")
         for word in oracle_full:
