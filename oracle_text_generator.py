@@ -107,9 +107,10 @@ class Oracle_Text_Generator:
         
         
         
-    def predict(self, prompt, num_predictions, random_prompt=False, random_prompt_length=magic_number_for_context_length_and_batch_size):
+    def predict(self, prompt, num_predictions, random_prompt=False, random_prompt_length=magic_number_for_context_length_and_batch_size, max_word_occurance=2):
         user_input = []
         predictions = []
+        duplicate_index_offset = 1
         if(random_prompt):
             vocab_vals = list(self.vocabulary.values())
             for i in range(random_prompt_length):
@@ -129,9 +130,21 @@ class Oracle_Text_Generator:
             probabilities = list(prediction)
             index = probabilities.index(max(probabilities))
             prediction = self.vocabulary[index]
+            while self.count_occurances_in_list(prediction, predictions) > max_word_occurance:
+                index = probabilities.index(max(probabilities)) + duplicate_index_offset
+                prediction = self.vocabulary[index]
+                duplicate_index_offset += 1
             predictions.append(prediction)
             user_input.append(prediction)
         return(user_input)
+    
+    def count_occurances_in_list(self, token, list):
+        count = 0
+        for item in list:
+            if item == token:
+                count += 1
+        return count
+
     
     def display_metrics(self):
         print(self.history)
