@@ -20,7 +20,7 @@ class Name_Generator:
             print("Documents:", documents)
 
         print("Getting sequences...")
-        self.tokenizer = Tokenizer(num_words=None)
+        self.tokenizer = Tokenizer(num_words=None, filters='!"#$%&()*+,-./:;<=>?@[\\]^_`{|}~\t\n')
         sequences = self.get_sequences(documents, self.tokenizer)
         if(self.verbose):
             print("Sequences:", sequences)
