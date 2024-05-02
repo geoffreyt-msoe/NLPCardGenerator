@@ -23,7 +23,7 @@ class Type_Line_Generator:
             print("Documents:", documents)
 
         print("Getting sequences...")
-        self.tokenizer = Tokenizer(num_words=None, filters='!"#$%&()*+,./:;<=>?@[\\]^_`{|}~\t\n')
+        self.tokenizer = Tokenizer(num_words=None, filters='!"#$%&()*+,-./:;<=>?@[\\]^_`{|}~\t\n')
         
         sequences = self.get_sequences(documents, self.tokenizer)
         
